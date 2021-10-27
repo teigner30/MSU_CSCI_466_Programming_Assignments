@@ -39,9 +39,13 @@ if __name__ == '__main__':
 	thread_L = [threading.Thread(name=object.__str__(), target=object.run) for object in object_L]
 	for t in thread_L:
 		t.start()
-	
+
+	ident = 0
 	# create some send events
-	client.udt_send(2, 'there once was a man on top of a hill, he liked to jump, he liked to write with a quill 2')
+	message = 'there once was a man on top of a hill, he liked to jump, he liked to write with a quill, ' \
+			  'and upon his window sill, there sat a plant named bill'
+	client.udt_send(2, ident, 0, 0, message)
+	ident += 1
 	
 	# give the network sufficient time to transfer all packets before quitting
 	sleep(simulation_time)

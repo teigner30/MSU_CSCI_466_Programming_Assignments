@@ -37,12 +37,17 @@ class Interface:
 class NetworkPacket:
     # packet encoding lengths
     dst_addr_S_length = 5
-    
+    ident_length = 1
+    flag_length = 1
+    frag_offset_length = 1
     #@param dst_addr: address of the destination host
     # @param data_S: packet payload
-    def __init__(self, dst_addr, data_S):
+    def __init__(self, dst_addr, identification, flag, frag_offset, data_S):
         self.dst_addr = dst_addr
         self.data_S = data_S
+        self.identification = identification
+        self.flag = flag
+        self.frag_offset = frag_offset
     
     # called when printing the object
     def __str__(self):
@@ -51,6 +56,9 @@ class NetworkPacket:
     # convert packet to a byte string for transmission over links
     def to_byte_S(self):
         byte_S = str(self.dst_addr).zfill(self.dst_addr_S_length)
+        byte_S += str(self.identification)
+        byte_S += str(self.flag)
+        byte_S += str(self.frag_offset)
         byte_S += self.data_S
         return byte_S
     
@@ -59,8 +67,13 @@ class NetworkPacket:
     @classmethod
     def from_byte_S(self, byte_S):
         dst_addr = int(byte_S[0: NetworkPacket.dst_addr_S_length])
-        data_S = byte_S[NetworkPacket.dst_addr_S_length:]
-        return self(dst_addr, data_S)
+        identification = int(byte_S[self.dst_addr_S_length:self.dst_addr_S_length + self.ident_length])
+        flag = int(byte_S[self.dst_addr_S_length + self.ident_length:
+                          self.dst_addr_S_length + self.ident_length + self.flag_length])
+        frag_offset = int(byte_S[self.dst_addr_S_length + self.ident_length + self.flag_length:
+                          self.dst_addr_S_length + self.ident_length + self.flag_length + self.frag_offset_length])
+        data_S = byte_S[self.dst_addr_S_length + self.ident_length + self.flag_length + self.frag_offset_length:]
+        return self(dst_addr, identification, flag, frag_offset, data_S)
 
 
 # Implements a network host for receiving and transmitting data
@@ -80,8 +93,8 @@ class Host:
     # create a packet and enqueue for transmission
     # @param dst_addr: destination address for the packet
     # @param data_S: data being transmitted to the network layer
-    def udt_send(self, dst_addr, data_S):
-        p = NetworkPacket(dst_addr, data_S)
+    def udt_send(self, dst_addr, identification, flag, frag_offset, data_S):
+        p = NetworkPacket(dst_addr, identification, flag, frag_offset, data_S)
         print('%s: sending packet "%s" on the out interface with mtu=%d' % (self, p, self.out_intf_L[0].mtu))
         self.out_intf_L[0].put(p.to_byte_S())  # send packets always enqueued successfully
     
