@@ -44,8 +44,6 @@ class Link:
             print('%s: packet "%s" length greater than the from interface MTU (%d)' % (self, pkt_S, self.out_intf.mtu))
             pkt2_S = pkt_S[self.in_intf.mtu:]
             pkt_S = pkt_S[0:self.in_intf.mtu] + pkt2_S[-1]
-            print("THIS IS PKT S", pkt_S)
-            print("THIS IS PKT 2S", pkt2_S)
               # return without transmitting if packet too big
         if len(pkt_S) > self.out_intf.mtu:
             print('%s: packet "%s" length greater than the to interface MTU (%d)' % (self, pkt_S, self.out_intf.mtu))
