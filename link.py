@@ -36,18 +36,31 @@ class Link:
     # transmit a packet from the 'from' to the 'to' interface
     def tx_pkt(self):
         pkt_S = self.in_intf.get()
+        pkt_S2 = ''
         if pkt_S is None:
             return  # return if no packet to transfer
         if len(pkt_S) > self.in_intf.mtu:
-            print('%s: packet "%s" length greater than the from interface MTU (%d)' % (self, pkt_S, self.out_intf.mtu))
-            return  # return without transmitting if packet too big
-        if len(pkt_S) > self.out_intf.mtu:
-            print('%s: packet "%s" length greater than the to interface MTU (%d)' % (self, pkt_S, self.out_intf.mtu))
-            return  # return without transmitting if packet too big
+            pkt_S2 = pkt_S[0:5] + pkt_S[self.in_intf.mtu-1:]
+            pkt_S = pkt_S[0:self.in_intf.mtu-1] + pkt_S2[-1]
+            print('p1' , pkt_S)
+            print('p2', pkt_S2)
+            # print(pkt_S, ' pkt 2', pkt_S2)
+            # return  # return without transmitting if packet too big
+        elif len(pkt_S) > self.out_intf.mtu:
+            pkt_S2 = pkt_S[0:5] + pkt_S[self.in_intf.mtu-1:]
+            pkt_S = pkt_S[0:self.out_intf.mtu-1] + pkt_S2[-1]
+            print('p1 out', pkt_S)
+            print('p2 out', pkt_S2)
+            # print(pkt_S, ' pkt 2 in da out', pkt_S2)
+            # print('%s: packet "%s" length greater than the to interface MTU (%d)' % (self, pkt_S, self.out_intf.mtu))
+            # return  # return without transmitting if packet too big
         # otherwise transmit the packet
         try:
             self.out_intf.put(pkt_S)
-            print('%s: transmitting packet "%s"' % (self, pkt_S))
+            print('%s: transmitting packetss "%s"' % (self, pkt_S))
+            if pkt_S2 != '':
+                self.out_intf.put(pkt_S2)
+                print('%s: transmitting p2 "%s"' % (self, pkt_S2))
         except queue.Full:
             print('%s: packet lost' % (self))
             pass
