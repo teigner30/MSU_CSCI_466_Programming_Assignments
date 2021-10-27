@@ -42,23 +42,24 @@ class Link:
             return  # return if no packet to transfer
         if len(pkt_S) > self.in_intf.mtu:
             print('%s: packet "%s" length greater than the from interface MTU (%d)' % (self, pkt_S, self.out_intf.mtu))
-            pkt2_S = pkt_S[self.in_intf.mtu:]
-            pkt_S = pkt_S[0:self.in_intf.mtu] + pkt2_S[-1]
+            pkt2_S = pkt_S[0:5] + pkt_S[self.in_intf.mtu-1:]
+            pkt_S = pkt_S[0:self.in_intf.mtu-1] + pkt2_S[-1]
               # return without transmitting if packet too big
         if len(pkt_S) > self.out_intf.mtu:
             print('%s: packet "%s" length greater than the to interface MTU (%d)' % (self, pkt_S, self.out_intf.mtu))
-            pkt2_S = pkt_S[self.in_intf.mtu:]
-            pkt_S = pkt_S[0:self.in_intf.mtu] + pkt2_S[-1]
+            pkt2_S = pkt_S[0:5] + pkt_S[self.in_intf.mtu-1:]
+            pkt_S = pkt_S[0:self.in_intf.mtu-1] + pkt2_S[-1]
               # return without transmitting if packet too big
         # otherwise transmit the packet
         try:
-            self.out_intf.put(pkt2_S)
             self.out_intf.put(pkt_S)
             print('%s: transmitting packet "%s"' % (self, pkt_S))
+            if pkt2_S != '':
+                self.out_intf.put(pkt2_S)
+                print('%s: transmitting packet "%s"' % (self, pkt2_S))
         except queue.Full:
             print('%s: packet lost' % (self))
             pass
-
 
 # An abstraction of the link layer
 class LinkLayer:
