@@ -41,8 +41,9 @@ if __name__ == '__main__':
 		t.start()
 	
 	# create some send events
-	for i in range(3):
-		client.udt_send(2, 'Sample data %d' % i)
+	# generate a message that is at least 80 characters long
+	message = "hello this our message for the data plane woohoooo we are so excited yayyyyyyyy 1"
+	client.udt_send(2, message)
 	
 	# give the network sufficient time to transfer all packets before quitting
 	sleep(simulation_time)
