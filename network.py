@@ -12,7 +12,7 @@ from rprint import print
 class Interface:
     # @param max_queue_size - the maximum size of the queue storing packets
     #  @param mtu - the maximum transmission unit on this interface
-    def __init__(self, max_queue_size=0):
+    def __init__(self, max_queue_size=10):
         self.queue = queue.Queue(max_queue_size);
         self.mtu = 1
     
@@ -78,7 +78,9 @@ class NetworkPacket:
 
 # Implements a network host for receiving and transmitting data
 class Host:
-    
+    data = ''
+    frag_counter = 0
+    id = 0
     #@param addr: address of this node represented as an integer
     def __init__(self, addr):
         self.addr = addr
@@ -100,9 +102,28 @@ class Host:
     
     # receive packet from the network layer
     def udt_receive(self):
+        # p = NetworkPacket(0,0,0,0,0)
         pkt_S = self.in_intf_L[0].get()
         if pkt_S is not None:
-            print('%s: received packet "%s" on the in interface' % (self, pkt_S))
+
+            p = NetworkPacket.from_byte_S(pkt_S)
+            # print('received ', p.data_S)
+            if p.flag == 1:
+                self.data += p.data_S
+                print('%s: received packet "%s" on the in interface' % (self, self.data))
+                self.data = ''
+                self.frag_counter = 0
+            else:
+                # print('received flag not 1', p.data_S)
+                if p.frag_offset == 0:
+                    self.id = p.identification
+                    self.frag_counter += 1
+                    self.data += p.data_S
+                elif p.identification == self.id:
+                    if self.frag_counter == p.frag_offset:
+                        self.frag_counter += 1
+                        self.data += p.data_S
+
     
     # thread target for the host to keep receiving data
     def run(self):

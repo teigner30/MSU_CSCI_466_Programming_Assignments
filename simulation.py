@@ -13,7 +13,7 @@ from rprint import print
 
 # configuration parameters
 router_queue_size = 0  # 0 means unlimited
-simulation_time = 1  # give the network sufficient time to transfer all packets before quitting
+simulation_time = 15  # give the network sufficient time to transfer all packets before quitting
 
 if __name__ == '__main__':
 	object_L = []  # keeps track of objects, so we can kill their threads
@@ -32,8 +32,8 @@ if __name__ == '__main__':
 	
 	# add all the links
 	# link parameters: from_node, from_intf_num, to_node, to_intf_num, mtu
-	link_layer.add_link(link.Link(client, 0, router_a, 0, 50))
-	link_layer.add_link(link.Link(router_a, 0, server, 0, 50))
+	link_layer.add_link(link.Link(client, 0, router_a, 0, 30))
+	link_layer.add_link(link.Link(router_a, 0, server, 0, 30))
 	
 	# start all the objects
 	thread_L = [threading.Thread(name=object.__str__(), target=object.run) for object in object_L]
@@ -44,6 +44,7 @@ if __name__ == '__main__':
 	# create some send events
 	message = 'there once was a man on top of a hill, he liked to jump, he liked to write with a quill, ' \
 			  'and upon his window sill, there sat a plant named bill'
+	print('sending message')
 	client.udt_send(2, ident, 0, 0, message)
 	ident += 1
 	

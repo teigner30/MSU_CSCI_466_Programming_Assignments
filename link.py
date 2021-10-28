@@ -49,51 +49,54 @@ class Link:
             start = 8
             finish = self.in_intf.mtu
             pkt_frag = pkt_S[0:6] + '0' + str(i) + pkt_S[start:finish]
-            print('pkt frag', pkt_frag)
             packets.append(pkt_frag)
             start += self.in_intf.mtu - 8
-            finish += start
+            finish += start - 8
             i += 1
             # gets all but the last segment so that we can change flag for the last one
             while start < len(pkt_S) - self.in_intf.mtu -1:
+
                 pkt_frag = pkt_S[0:6] + '0' + str(i) + pkt_S[start:finish]
-                print('pkt frag', pkt_frag)
+                # print('pkt frag', pkt_frag)
                 packets.append(pkt_frag)
-                start += self.in_intf.mtu
-                finish += start
+                start = finish
+                finish += self.in_intf.mtu -8
+
                 i += 1
 
             pkt_frag = pkt_S[0:6] + '1' + str(i) + pkt_S[start:]
             packets.append(pkt_frag)
-            print('packets list', packets)
+            # print('packets list', packets)
             # print(pkt_S, ' pkt 2', pkt_S2)
             # return  # return without transmitting if packet too big
         elif len(pkt_S) > self.out_intf.mtu:
             i = 0
             start = 8
-            finish = self.in_intf.mtu
+            finish = self.out_intf.mtu
             pkt_frag = pkt_S[0:6] + '0' + str(i) + pkt_S[start:finish]
-            print('pkt frag', pkt_frag)
             packets.append(pkt_frag)
-            start += self.in_intf.mtu - 8
-            finish += start
+            start += self.out_intf.mtu - 8
+            finish += start - 8
             i += 1
             # gets all but the last segment so that we can change flag for the last one
-            while start < len(pkt_S) - self.in_intf.mtu - 1:
+            while start < len(pkt_S) - self.out_intf.mtu - 1:
                 pkt_frag = pkt_S[0:6] + '0' + str(i) + pkt_S[start:finish]
-                print('pkt frag', pkt_frag)
+                # print('pkt frag', pkt_frag)
                 packets.append(pkt_frag)
-                start += self.in_intf.mtu
-                finish += start
+                start = finish
+                finish += self.out_intf.mtu - 8
+
                 i += 1
 
             pkt_frag = pkt_S[0:6] + '1' + str(i) + pkt_S[start:]
             packets.append(pkt_frag)
-            print('packets list', packets)
-            # print(pkt_S, ' pkt 2', pkt_S2)
-            # return  # return without transmitting if packet too big
+        elif len(pkt_S) <= self.in_intf.mtu and len(pkt_S) <= self.out_intf.mtu:
+            packets.append(pkt_S)
+            # print('packets list', packets)
         # otherwise transmit the packet
         try:
+            # print('pakceterts', packets)
+            # self.out_intf.put(packets[0])
             for p in packets:
                 self.out_intf.put(p)
                 print('%s: transmitting packetss "%s"' % (self, p))
