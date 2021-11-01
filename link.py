@@ -91,8 +91,8 @@ class Link:
             pkt_frag = pkt_S[0:6] + '1' + str(i) + pkt_S[start:]
             packets.append(pkt_frag)
         elif len(pkt_S) <= self.in_intf.mtu and len(pkt_S) <= self.out_intf.mtu:
-            pkt_frag = pkt_S[0:6] + '1' + '0' + pkt_S[8:]
-            packets.append(pkt_frag)
+            # pkt_frag = pkt_S[0:6] + '1' + '0' + pkt_S[8:]
+            packets.append(pkt_S)
             # print('packets list', packets)
         # otherwise transmit the packet
         try:

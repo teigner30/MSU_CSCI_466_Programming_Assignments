@@ -13,15 +13,25 @@ from rprint import print
 
 # configuration parameters
 router_queue_size = 0  # 0 means unlimited
-simulation_time = 8  # give the network sufficient time to transfer all packets before quitting
+simulation_time = 12  # give the network sufficient time to transfer all packets before quitting
 
 if __name__ == '__main__':
 	object_L = []  # keeps track of objects, so we can kill their threads
 	# # need 4 hosts and 4 routers
-	routing_table_a = [[3, 0], [4, 1]]
-	routing_table_b = [3, 0]
-	routing_table_c = [4, 0]
-	routing_table_d = [[3, 0], [4, 1]]
+	routing_table_a = {
+		3: 0,
+		4: 1
+	}
+	routing_table_b = {
+		3: 0
+	}
+	routing_table_c = {
+		4: 0
+	}
+	routing_table_d = {
+		3: 0,
+		4: 1
+	}
 	# create network nodes
 	host1 = network.Host(1)
 	object_L.append(host1)
@@ -47,13 +57,13 @@ if __name__ == '__main__':
 	
 	# add all the links
 	# link parameters: from_node, from_intf_num, to_node, to_intf_num, mtu
-	link_layer.add_link(link.Link(host1, 0, router_a, 1, 30))
+	link_layer.add_link(link.Link(host1, 0, router_a, 0, 30))
 	link_layer.add_link(link.Link(host2, 0, router_a, 1, 30))
-	link_layer.add_link(link.Link(router_a, 1, router_b, 0, 30))
+	link_layer.add_link(link.Link(router_a, 0, router_b, 0, 30))
 	link_layer.add_link(link.Link(router_a, 1, router_c, 0, 30))
-	link_layer.add_link(link.Link(router_b, 0, router_d, 1, 30))
+	link_layer.add_link(link.Link(router_b, 0, router_d, 0, 30))
 	link_layer.add_link(link.Link(router_c, 0, router_d, 1, 30))
-	link_layer.add_link(link.Link(router_d, 1, host3, 0, 30))
+	link_layer.add_link(link.Link(router_d, 0, host3, 0, 30))
 	link_layer.add_link(link.Link(router_d, 1, host4, 0, 30))
 	
 	# start all the objects
@@ -63,11 +73,12 @@ if __name__ == '__main__':
 
 	ident = 0
 	# create some send events
-	message = 'there once was a man'
-	# message = 'there once was a man on top of a hill, he liked to jump, he liked to write with a quill, ' \
-	# 		  'and upon his window sill, there sat a plant named bill'
+	# message = 'there once was a man'
+	message = 'there once was a man on top of a hill, he liked to jump, he liked to write with a quill, ' \
+			  'and upon his window sill, there sat a plant named bill'
 	print('sending message')
-	host2.udt_send(4, ident, 0, 0, message)
+	host1.udt_send(3, ident, 1, 0, message)
+	# host2.udt_send(4, ident, 1, 0, message)
 	ident += 1
 	
 	# give the network sufficient time to transfer all packets before quitting
