@@ -45,7 +45,7 @@ if __name__ == '__main__':
 	message = 'there once was a man on top of a hill, he liked to jump, he liked to write with a quill, ' \
 			  'and upon his window sill, there sat a plant named bill'
 	print('sending message')
-	client.udt_send(2, ident, 0, 0, message)
+	client.udt_send(2, ident, 1, 0, message)
 	ident += 1
 	
 	# give the network sufficient time to transfer all packets before quitting
