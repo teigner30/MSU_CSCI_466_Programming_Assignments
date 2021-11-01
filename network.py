@@ -12,7 +12,7 @@ from rprint import print
 class Interface:
     # @param max_queue_size - the maximum size of the queue storing packets
     #  @param mtu - the maximum transmission unit on this interface
-    def __init__(self, max_queue_size=10):
+    def __init__(self, max_queue_size=0):
         self.queue = queue.Queue(max_queue_size);
         self.mtu = 1
     
@@ -143,12 +143,16 @@ class Router:
     #@param name: friendly router name for debugging
     # @param intf_count: the number of input and output interfaces
     # @param max_queue_size: max queue length (passed to Interface)
-    def __init__(self, name, intf_count, max_queue_size):
+    def __init__(self, name, intf_count, max_queue_size, routing_table):
         self.stop = False  # for thread termination
         self.name = name
         # create a list of interfaces
         self.in_intf_L = [Interface(max_queue_size) for _ in range(intf_count)]
         self.out_intf_L = [Interface(max_queue_size) for _ in range(intf_count)]
+        self.routing_table = routing_table
+        print(self.name)
+        print('in_intF', self.in_intf_L)
+        print('out_intF', self.out_intf_L, '\n\n\n\n')
     
     # called when printing the object
     def __str__(self):
@@ -168,9 +172,21 @@ class Router:
                     # HERE you will need to implement a lookup into the
                     # forwarding table to find the appropriate outgoing interface
                     # for now we assume the outgoing interface is also i
-                    print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
-                          % (self, p, i, i, self.out_intf_L[i].mtu))
-                    self.out_intf_L[i].put(p.to_byte_S())
+
+                    for route in range(len(self.routing_table)):
+                        print(self.routing_table[route][0], 'routing tablee')
+                        if self.routing_table[route][0] == p.dst_addr:
+                            print('%s: forwarding packet routinh table "%s" from interface %d to %d with mtu %d' \
+                                  % (self, p, i, self.routing_table[route][1], self.out_intf_L[i].mtu))
+                            self.out_intf_L[self.routing_table[route][1]].put(p.to_byte_S())
+                    else:
+                        print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
+                              % (self, p, i, i, self.out_intf_L[0].mtu))
+                        self.out_intf_L[0].put(p.to_byte_S())
+
+                    # print('%s: forwarding packet "%s" from interface %d to %d with mtu %d' \
+                    #       % (self, p, i, i, self.out_intf_L[i].mtu))
+                    # self.out_intf_L[i].put(p.to_byte_S())
             except queue.Full:
                 print('%s: packet "%s" lost on interface %d' % (self, p, i))
                 pass
