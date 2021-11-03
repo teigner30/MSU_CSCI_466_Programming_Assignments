@@ -140,14 +140,37 @@ class Router:
         self.cost_D = cost_D  # {neighbor: {interface: cost}}
         # TODO: set up the routing table for connected hosts
         self.rt_tbl_D = {}  # {destination: {router: cost}}
+
+        for neighbor, cost in cost_D.items():
+            for k, v in cost.items():
+                self.rt_tbl_D[neighbor] = {self.name: v}
+        self.rt_tbl_D[self.name] = {self.name: 0}
         print('%s: Initialized routing table' % self)
         self.print_routes()
+
+        # send to the neighbors, which are in cost_D
     
     # Print routing table
     def print_routes(self):
         print("Routing table at %s" % self.name)
         # TODO: print the routes as a two dimensional table
-        print(self.rt_tbl_D)
+        print('=====================')
+        print('|', self.name, '| ', end='')
+        for destination, value in self.rt_tbl_D.items():
+            print(destination, '| ', end='')
+            router = list(value.keys())
+        print('')
+        print('=====================')
+        print('| ', end='')
+        i =0
+        print(router[0], '| ', end='')
+        for destination, value in self.rt_tbl_D.items():
+
+            for router, cost in value.items():
+                print(cost, ' | ', end='')
+
+        print('')
+        print('---------------------')
     
     # called when printing the object
     def __str__(self):
@@ -189,7 +212,16 @@ class Router:
     def send_routes(self, i):
         # TODO: Send out a routing table update
         #  create a routing table update packet
-        p = NetworkPacket(0, 'control', 'DUMMY_ROUTING_TABLE')
+        data = self.name
+        data += ' '
+        for destination, value in self.rt_tbl_D.items():
+            data += destination + ' '
+            for router, cost in value.items():
+                data += router
+                data += str(cost)
+                data += '$ '
+        print(data)
+        p = NetworkPacket(0, 'control', data)
         try:
             print('%s: sending routing update "%s" from interface %d' % (self, p, i))
             self.intf_L[i].put(p.to_byte_S(), 'out', True)
@@ -203,6 +235,7 @@ class Router:
         # TODO: add logic to update the routing tables and
         #  possibly send out routing updates
         print('%s: Received routing update %s from interface %d' % (self, p, i))
+
     
     # thread target for the host to keep forwarding data
     def run(self):
