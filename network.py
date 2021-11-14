@@ -241,7 +241,7 @@ class Router:
                 data += '$ '+ destination + ' '
             data = data[0:-(len(destination)+1)]
             data += ' '
-        print(data)
+        # print(data)
         p = NetworkPacket(0, 'control', data)
         try:
             print('%s: sending routing update "%s" from interface %d' % (self, p, i))
@@ -322,11 +322,12 @@ class Router:
 
         #   to forward to the good routers
         if updated:
-            # for r in routers:
-            #     if r in self.cost_D:
-            #         for k in self.cost_D[r].keys():
-            self.send_routes(0)
-            self.send_routes(1)
+            for r in routers:
+                if r in self.cost_D:
+                    for k in self.cost_D[r].keys():
+                        self.send_routes(k)
+            # self.send_routes(0)
+            # self.send_routes(1)
 
 
 
