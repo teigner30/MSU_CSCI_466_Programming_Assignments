@@ -152,25 +152,32 @@ class Router:
     
     # Print routing table
     def print_routes(self):
+        print(self.rt_tbl_D)
         print("Routing table at %s" % self.name)
         # TODO: print the routes as a two dimensional table
-        print('=====================')
+        print('==========================')
         print('|', self.name, '| ', end='')
         for destination, value in self.rt_tbl_D.items():
             print(destination, '| ', end='')
             router = list(value.keys())
         print('')
-        print('=====================')
-        print('| ', end='')
-        i =0
-        print(router[0], '| ', end='')
-        for destination, value in self.rt_tbl_D.items():
+        print('==========================')
 
-            for router, cost in value.items():
-                print(cost, ' | ', end='')
+        for r in router:
+            print('| ', end='')
+            print(r, '| ', end='')
+            for destination, value in self.rt_tbl_D.items():
 
-        print('')
-        print('---------------------')
+                for router, cost in value.items():
+                    if router is r:
+                        print(cost, ' | ', end='')
+
+
+            print('')
+            print('--------------------------')
+
+
+
     
     # called when printing the object
     def __str__(self):
@@ -219,7 +226,7 @@ class Router:
             for router, cost in value.items():
                 data += router
                 data += str(cost)
-                data += '$ '
+                data += '$'
         print(data)
         p = NetworkPacket(0, 'control', data)
         try:
@@ -234,7 +241,57 @@ class Router:
     def update_routes(self, p, i):
         # TODO: add logic to update the routing tables and
         #  possibly send out routing updates
+        updated = False
         print('%s: Received routing update %s from interface %d' % (self, p, i))
+        data = p.data_S.split('$')
+        print(data)
+        datalist = []
+        for d in data:
+            datalist.append(d.split(' '))
+        from_router = datalist[0][0]
+        del datalist[0][0]
+        print('dataliest', datalist)
+        for d in datalist:
+            if len(d) == 2:
+                name = d[1]
+                cost = int(name[-1])
+                if d[0] not in self.rt_tbl_D.keys(): # if the new information isn't in the table already, we add it
+                    self.rt_tbl_D[d[0]] = {from_router: cost}
+                    updated = True
+                else:
+                    if from_router in self.rt_tbl_D[d[0]].keys(): # if the info isn't in the table already, we just add it
+
+
+                        curr_cost = self.rt_tbl_D[d[0]][from_router]
+
+                        add_cost = self.rt_tbl_D[from_router][self.name]
+                        cost += add_cost
+                        if curr_cost > cost:  # if the new cost is less, we update table
+                            self.rt_tbl_D[d[0]][from_router] = cost
+                            updated = True
+                    else:
+                        self.rt_tbl_D[d[0]][from_router] = cost
+                        updated = True
+                # print('tablee', self.rt_tbl_D[d[0]])
+        costs = {}
+        # if the table is incomplete, we add 100 cost to where we don't know
+        for destination, value in self.rt_tbl_D.items():
+            routers = value.keys()
+            if from_router not in value.keys():
+                self.rt_tbl_D[destination][from_router] = 100
+                updated = True
+            if self.name not in value.keys():
+                for r in routers:
+                    costs[r] = self.rt_tbl_D[destination][r] + self.rt_tbl_D[self.name][r]
+                mini = min(costs, key=costs.get)
+                print('min and costs', mini, costs)
+                self.rt_tbl_D[destination][self.name] = costs[mini]
+                updated = True
+        if updated:
+            self.send_routes(0)
+            self.send_routes(1)
+
+
 
     
     # thread target for the host to keep forwarding data
