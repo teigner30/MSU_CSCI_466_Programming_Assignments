@@ -136,7 +136,7 @@ class Router:
         self.name = name
         # create a list of interfaces
         self.intf_L = [Interface(max_queue_size) for _ in range(len(cost_D))]
-        # save neighbors and interfeces on which we connect to them
+        # save neighbors and interfaces on which we connect to them
         self.cost_D = cost_D  # {neighbor: {interface: cost}}
         # TODO: set up the routing table for connected hosts
         self.rt_tbl_D = {}  # {destination: {router: cost}}
@@ -208,8 +208,21 @@ class Router:
             # TODO: Here you will need to implement a lookup into the 
             #  forwarding table to find the appropriate outgoing interface
             #  for now we assume the outgoing interface is 1
-            self.intf_L[1].put(p.to_byte_S(), 'out', True)
-            print('%s: forwarding packet "%s" from interface %d to %d' % (self, p, i, 1))
+            dest = p.dst
+
+            costs = {}
+            # find the router with the minimum cost for the destination
+            for router, cost in self.rt_tbl_D[dest].items():
+                costs[router] = cost
+            mini = min(costs, key=costs.get)
+
+            # get the interface for this router and send on this interface
+            for neighbor, info in self.cost_D.items():
+                for interface, cost in info.items():
+                    if neighbor == mini:
+                        self.intf_L[interface].put(p.to_byte_S(), 'out', True)
+                        print('%s: forwarding packet "%s" from interface %d to %d' % (self, p, i, 1))
+
         except queue.Full:
             print('%s: packet "%s" lost on interface %d' % (self, p, i))
             pass
