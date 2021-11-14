@@ -220,7 +220,7 @@ class Router:
                 for interface, cost in info.items():
                     if neighbor == mini:
                         self.intf_L[interface].put(p.to_byte_S(), 'out', True)
-                        print('%s: forwarding packet "%s" from interface %d to %d' % (self, p, i, 1))
+                        print('%s: forwarding packet "%s" from interface %d to %d' % (self, p, i, interface))
 
         except queue.Full:
             print('%s: packet "%s" lost on interface %d' % (self, p, i))
@@ -263,7 +263,6 @@ class Router:
             datalist.append(d.split(' '))
         from_router = datalist[0][0]
         del datalist[0][0]
-        # print('dataliest', datalist)
         newlist = [x for x in datalist if x]
         for d in newlist:
             while '' in d:
@@ -295,7 +294,6 @@ class Router:
                     else:
                         self.rt_tbl_D[d[0]][newname] = cost
                         updated = True
-                # print('tablee', self.rt_tbl_D[d[0]])
         costs = {}
         # if the table is incomplete, we add 100 cost to where we don't know
         for destination, value in self.rt_tbl_D.items():
@@ -311,7 +309,6 @@ class Router:
             for r in routers:
                 costs[r] = self.rt_tbl_D[destination][r] + self.rt_tbl_D[self.name][r]
             mini = min(costs, key=costs.get)
-            print('min and costs', mini, costs, destination)
             if self.rt_tbl_D[destination][self.name] != costs[mini]:
                 self.rt_tbl_D[destination][self.name] = costs[mini]
                 updated = True
