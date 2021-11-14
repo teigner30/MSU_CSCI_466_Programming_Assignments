@@ -268,7 +268,6 @@ class Router:
             while '' in d:
                 d.remove('')
         newestlist = [x for x in newlist if x]
-        print('after dataliest', newestlist)
         for d in newestlist:
             if len(d) == 2:
                 name = d[1]
@@ -281,12 +280,13 @@ class Router:
                     self.rt_tbl_D[d[0]] = {newname: cost}
                     updated = True
                 else:
-                    if newname in self.rt_tbl_D[d[0]].keys():
+                    if newname in self.rt_tbl_D[d[0]].keys():  #if the router is already in the current destination's key
 
 
                         curr_cost = self.rt_tbl_D[d[0]][newname]
-
-                        add_cost = self.rt_tbl_D[newname][self.name]
+                        add_cost = 0
+                        if d[0] not in self.cost_D.keys(): # if the destination is not a neighbor, we have to get the distance from ourselves to the router
+                            add_cost = self.rt_tbl_D[newname][self.name]
                         cost += add_cost
                         if curr_cost > cost:  # if the new cost is less, we update table
                             self.rt_tbl_D[d[0]][newname] = cost
@@ -294,10 +294,10 @@ class Router:
                     else:
                         self.rt_tbl_D[d[0]][newname] = cost
                         updated = True
+
         costs = {}
         # if the table is incomplete, we add 100 cost to where we don't know
         for destination, value in self.rt_tbl_D.items():
-            routers = value.keys()
             if from_router not in value.keys():
                 self.rt_tbl_D[destination][from_router] = 100
                 updated = True
@@ -307,12 +307,18 @@ class Router:
         for destination, value in self.rt_tbl_D.items():
             routers = value.keys()
             for r in routers:
-                costs[r] = self.rt_tbl_D[destination][r] + self.rt_tbl_D[self.name][r]
+
+                if destination in self.cost_D.keys() and r == self.name:
+                    val = self.cost_D[destination]
+                    for k, v in val.items():
+                        costs[r] = v + self.rt_tbl_D[self.name][r]
+                else:
+                    costs[r] = self.rt_tbl_D[destination][r] + self.rt_tbl_D[self.name][r]
             mini = min(costs, key=costs.get)
             if self.rt_tbl_D[destination][self.name] != costs[mini]:
                 self.rt_tbl_D[destination][self.name] = costs[mini]
                 updated = True
-        print(self.name, self.rt_tbl_D)
+
         #   to forward to the good routers
         if updated:
             # for r in routers:
