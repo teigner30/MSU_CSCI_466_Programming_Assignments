@@ -167,9 +167,8 @@ class Router:
             print('| ', end='')
             print(r, '| ', end='')
             for destination, value in self.rt_tbl_D.items():
-
                 for router, cost in value.items():
-                    if router is r:
+                    if router == r:
                         print(cost, ' | ', end='')
 
 
@@ -239,7 +238,9 @@ class Router:
             for router, cost in value.items():
                 data += router
                 data += str(cost)
-                data += '$'
+                data += '$ '+ destination + ' '
+            data = data[0:-(len(destination)+1)]
+            data += ' '
         print(data)
         p = NetworkPacket(0, 'control', data)
         try:
@@ -257,33 +258,42 @@ class Router:
         updated = False
         print('%s: Received routing update %s from interface %d' % (self, p, i))
         data = p.data_S.split('$')
-        print(data)
         datalist = []
         for d in data:
             datalist.append(d.split(' '))
         from_router = datalist[0][0]
         del datalist[0][0]
-        print('dataliest', datalist)
-        for d in datalist:
+        # print('dataliest', datalist)
+        newlist = [x for x in datalist if x]
+        for d in newlist:
+            while '' in d:
+                d.remove('')
+        newestlist = [x for x in newlist if x]
+        print('after dataliest', newestlist)
+        for d in newestlist:
             if len(d) == 2:
                 name = d[1]
-                cost = int(name[-1])
+                newname = name[0:2]
+                if '100' in name:
+                    cost = 100
+                else:
+                    cost = int(name[-1])
                 if d[0] not in self.rt_tbl_D.keys(): # if the new information isn't in the table already, we add it
-                    self.rt_tbl_D[d[0]] = {from_router: cost}
+                    self.rt_tbl_D[d[0]] = {newname: cost}
                     updated = True
                 else:
-                    if from_router in self.rt_tbl_D[d[0]].keys(): # if the info isn't in the table already, we just add it
+                    if newname in self.rt_tbl_D[d[0]].keys():
 
 
-                        curr_cost = self.rt_tbl_D[d[0]][from_router]
+                        curr_cost = self.rt_tbl_D[d[0]][newname]
 
-                        add_cost = self.rt_tbl_D[from_router][self.name]
+                        add_cost = self.rt_tbl_D[newname][self.name]
                         cost += add_cost
                         if curr_cost > cost:  # if the new cost is less, we update table
-                            self.rt_tbl_D[d[0]][from_router] = cost
+                            self.rt_tbl_D[d[0]][newname] = cost
                             updated = True
                     else:
-                        self.rt_tbl_D[d[0]][from_router] = cost
+                        self.rt_tbl_D[d[0]][newname] = cost
                         updated = True
                 # print('tablee', self.rt_tbl_D[d[0]])
         costs = {}
@@ -294,15 +304,26 @@ class Router:
                 self.rt_tbl_D[destination][from_router] = 100
                 updated = True
             if self.name not in value.keys():
-                for r in routers:
-                    costs[r] = self.rt_tbl_D[destination][r] + self.rt_tbl_D[self.name][r]
-                mini = min(costs, key=costs.get)
-                print('min and costs', mini, costs)
+                self.rt_tbl_D[destination][self.name] = 100
+
+        for destination, value in self.rt_tbl_D.items():
+            routers = value.keys()
+            for r in routers:
+                costs[r] = self.rt_tbl_D[destination][r] + self.rt_tbl_D[self.name][r]
+            mini = min(costs, key=costs.get)
+            print('min and costs', mini, costs, destination)
+            if self.rt_tbl_D[destination][self.name] != costs[mini]:
                 self.rt_tbl_D[destination][self.name] = costs[mini]
                 updated = True
+        print(self.name, self.rt_tbl_D)
+        #   to forward to the good routers
         if updated:
+            # for r in routers:
+            #     if r in self.cost_D:
+            #         for k in self.cost_D[r].keys():
             self.send_routes(0)
             self.send_routes(1)
+
 
 
 
