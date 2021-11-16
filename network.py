@@ -141,6 +141,8 @@ class Router:
         # TODO: set up the routing table for connected hosts
         self.rt_tbl_D = {}  # {destination: {router: cost}}
 
+
+        # setting up the routing table
         for neighbor, cost in cost_D.items():
             for k, v in cost.items():
                 self.rt_tbl_D[neighbor] = {self.name: v}
@@ -253,7 +255,7 @@ class Router:
     # forward the packet according to the routing table
     #  @param p Packet containing routing information
     def update_routes(self, p, i):
-        print("BEGINNING", self.rt_tbl_D)
+        # print("BEGINNING", self.rt_tbl_D)
         # TODO: add logic to update the routing tables and
         #  possibly send out routing updates
         updated = False
@@ -277,67 +279,158 @@ class Router:
                     cost = 100
                 else:
                     cost = int(name[-1])
-                if d[0] not in self.rt_tbl_D.keys(): # if the new information isn't in the table already, we add it
-                    self.rt_tbl_D[d[0]] = {newname: cost}
-                    updated = True
-                else:
-                    if newname in self.rt_tbl_D[d[0]].keys():  #if the router is already in the current destination's key
-                        curr_cost = self.rt_tbl_D[d[0]][newname]
-                        add_cost = 0
-                        if d[0] not in self.cost_D.keys(): # if the destination is not a neighbor, we have to get the distance from ourselves to the router
-                            add_cost = self.rt_tbl_D[newname][self.name]
-                        cost += add_cost
-                        if curr_cost > cost:  # if the new cost is less, we update table
-                            self.rt_tbl_D[d[0]][newname] = cost
+                if 'H' in d[0]:
+                    if d[0] not in self.rt_tbl_D.keys():  # if the new information isn't in the table already, we add it
+                        if newname in self.cost_D.keys():  # to see if the new router is a neighbor
+                            self.rt_tbl_D[d[0]] = {newname: cost}
+                            self.rt_tbl_D[d[0]][self.name] = 100  # if the destination isn't in our routing table, our cost to it is infinite
+                            # for neighbor in self.cost_D.keys():  # if we have another neighbor, we have to add their cost to the destination which is unknown??????
+                            #     if neighbor != newname:
+                            #         self.rt_tbl_D[d[0]][neighbor] = 100
+                            print("UPdating in initialization")
                             updated = True
-                    else:
-                        self.rt_tbl_D[d[0]][newname] = cost
-                        updated = True
-
-
-
+        # print(self.name, 'MINE', self.rt_tbl_D)
         routers = []
-        # if the table is incomplete, we add 100 cost to where we don't know
-        for destination, value in self.rt_tbl_D.items():
-            if 'H' not in destination:
-                routers.append(destination)
-            if destination not in value.keys():
-                self.rt_tbl_D[destination][from_router] = 100
-                if 'H' not in destination:
-                    self.rt_tbl_D[destination][destination] = 0
-                updated = True
-            if self.name not in value.keys():
-                self.rt_tbl_D[destination][self.name] = 100
-                updated = True
-
-        print("route em", routers)
-        for destination, value in self.rt_tbl_D.items():
+        for destination, value in self.rt_tbl_D.items():   # this gets a list of the routers that are currently in the values for initialization
+            for rout in value.keys():
+                if rout not in routers:
+                    routers.append(rout)
+        # print('routem', routers)
+        for destination, value in self.rt_tbl_D.items():   # this sets the the rest of the values that need to be filled in to be 100. A lot of these 100's should be updated later when we do the minimimum stuff
             for r in routers:
                 if r not in value.keys():
                     self.rt_tbl_D[destination][r] = 100
-        #dist_list = {}
-        for destination, value in self.rt_tbl_D.items():
-            dist_list = {}
-            #print('dest,vale', destination, value, self.rt_tbl_D)
-            #routers = value.keys()
-            #for r in routers:
-            for neighbor, info in self.cost_D.items():
-                for interface, cost in info.items():
-                    if neighbor != destination:
-                        if neighbor in value.keys():
-                            dist_list[neighbor] = cost + self.rt_tbl_D[destination][neighbor]
-                            #print("DIst list", dist_list)
-                        else:
-                            break
-                    else:
-                        dist_list[neighbor] = cost
+                    print("UPdating in lower initialization")
+                    updated = True
+        # print(self.name, 'MINE innit??', self.rt_tbl_D)
 
+
+        # confusing stuff :) vvvv
+
+        for destination, value in self.rt_tbl_D.items():
+            if destination == self.name:
+                continue
+            dist_list = {}
+
+            # for neighbor, c in self.cost_D.items():
+            #     for cost in c.values():
+            #         if 'H' not in neighbor:
+            #             if neighbor in value.keys():
+            #                 print('we in')
+
+            for d in newestlist:
+
+                if len(d) == 2:
+
+                    dest = d[0]
+                    # print('this is d', dest, 'destination', destination)
+                    if dest == destination:   # if the destination from the message is the destination we're looking at, we want to do stuff
+                        # print('destinatino is good', d)
+                        part2 = d[1]
+                        routermess = part2[0:2]
+                        if destination == routermess:
+                            if '100' in part2:
+                                costmess = 100
+                            else:
+                                costmess = int(part2[-1])
+                            dist_list[routermess] = costmess
+                        elif routermess in self.cost_D.keys():
+                            # print('router from message is neighbor', d)
+                            if '100' in part2:
+                                costmess = 100
+                            else:
+                                costmess = int(part2[-1])
+                            for cost in self.cost_D[routermess].values():
+                                dist_list[routermess] = cost + costmess
+                            # print('distLIST', dist_list)
+                        # else:
+                        #     dist_list[neighbor] = cost + self.rt_tbl_D[destination][neighbor]
+            for router, cost in value.items():
+                if router in dist_list.keys():
+                    messagecost = dist_list[router]
+                    ourcost = cost + self.rt_tbl_D[router][self.name]
+                    if messagecost < ourcost:  # if message had smaller cost, then we update our table
+                        self.rt_tbl_D[destination][router] = messagecost
+                        print("UPdating not in initialization", self.name, messagecost, ourcost)
+                        updated = True
+                dist_list[router] = cost + self.rt_tbl_D[router][self.name]
+            if not dist_list:
+                # print("dist-list is emtpy", dist_list)
+                continue
+            # else:
+            #
+            #     print('distlist is exciting', dist_list)
             minim = min(dist_list, key=dist_list.get)
-            #self.rt_tbl_D[self.name][destination] = dist_list[minim]
+            # self.rt_tbl_D[self.name][destination] = dist_list[minim]
             if self.rt_tbl_D[destination][self.name] != dist_list[minim]:
                 self.rt_tbl_D[destination][self.name] = dist_list[minim]
-                print("SOMETHING", self.rt_tbl_D[destination][self.name])
+                # print("SOMETHING", self.rt_tbl_D[destination][self.name])
+                print("UPdating in bellmans style", self.name)
                 updated = True
+
+
+
+
+
+
+                    # else:
+                    #     if newname in self.rt_tbl_D[d[0]].keys():  #if the router is already in the current destination's key
+                    #         curr_cost = self.rt_tbl_D[d[0]][newname]
+                    #         add_cost = 0
+                    #         if d[0] not in self.cost_D.keys(): # if the destination is not a neighbor, we have to get the distance from ourselves to the router
+                    #             add_cost = self.rt_tbl_D[newname][self.name]
+                    #         cost += add_cost
+                    #         if curr_cost > cost:  # if the new cost is less, we update table
+                    #             self.rt_tbl_D[d[0]][newname] = cost
+                    #             updated = True
+                    #     else:
+                    #         self.rt_tbl_D[d[0]][newname] = cost
+                    #         updated = True
+        #
+        #
+        #
+        # routers = []
+        # # if the table is incomplete, we add 100 cost to where we don't know
+        # for destination, value in self.rt_tbl_D.items():
+        #     if 'H' not in destination:
+        #         routers.append(destination)
+        #     if destination not in value.keys():
+        #         self.rt_tbl_D[destination][from_router] = 100
+        #         if 'H' not in destination:
+        #             self.rt_tbl_D[destination][destination] = 0
+        #         updated = True
+        #     if self.name not in value.keys():
+        #         self.rt_tbl_D[destination][self.name] = 100
+        #         updated = True
+
+        # print("route em", routers)
+        # for destination, value in self.rt_tbl_D.items():
+        #     for r in routers:
+        #         if r not in value.keys():
+        #             self.rt_tbl_D[destination][r] = 100
+        # #dist_list = {}
+        # for destination, value in self.rt_tbl_D.items():
+        #     dist_list = {}
+        #     #print('dest,vale', destination, value, self.rt_tbl_D)
+        #     #routers = value.keys()
+        #     #for r in routers:
+        #     for neighbor, info in self.cost_D.items():
+        #         for interface, cost in info.items():
+        #             if neighbor != destination:
+        #                 if neighbor in value.keys():
+        #                     dist_list[neighbor] = cost + self.rt_tbl_D[destination][neighbor]
+        #                     #print("DIst list", dist_list)
+        #                 else:
+        #                     break
+        #             else:
+        #                 dist_list[neighbor] = cost
+        #
+        #     minim = min(dist_list, key=dist_list.get)
+        #     #self.rt_tbl_D[self.name][destination] = dist_list[minim]
+        #     if self.rt_tbl_D[destination][self.name] != dist_list[minim]:
+        #         self.rt_tbl_D[destination][self.name] = dist_list[minim]
+        #         print("SOMETHING", self.rt_tbl_D[destination][self.name])
+        #         updated = True
 
 
 
@@ -355,11 +448,13 @@ class Router:
 
         #   to forward to the good routers
         if updated:
-            print("ROUTERSS", routers)
+            # print("ROUTERSS", routers)
             for neighbor, value in self.cost_D.items():
                 for interface, cost in value.items():
                     # if neighbor in routers:
                     self.send_routes(interface)
+        else:
+            print("WE WIN")
 
                     # interface = value.keys()
                     # print("INTERFACE", interface)
@@ -372,7 +467,7 @@ class Router:
             #             print("printk ", k)
             #             self.send_routes(k)
 
-        print("ENd", self.rt_tbl_D)
+        # print("ENd", self.rt_tbl_D)
 
     # thread target for the host to keep forwarding data
     def run(self):
