@@ -208,19 +208,24 @@ class Router:
             #  forwarding table to find the appropriate outgoing interface
             #  for now we assume the outgoing interface is 1
             dest = p.dst
+            if dest in self.cost_D.keys():
+                interface = self.cost_D[dest].keys()
+                for inter in interface:
+                    self.intf_L[inter].put(p.to_byte_S(), 'out', True)
+                    print('%s: forwarding packet "%s" from interface %d to %d' % (self, p, i, inter))
+            else:
+                costs = {}
+                # find the router with the minimum cost for the destination
+                for router, cost in self.rt_tbl_D[dest].items():
+                    costs[router] = cost
+                mini = min(costs, key=costs.get)
 
-            costs = {}
-            # find the router with the minimum cost for the destination
-            for router, cost in self.rt_tbl_D[dest].items():
-                costs[router] = cost
-            mini = min(costs, key=costs.get)
-
-            # get the interface for this router and send on this interface
-            for neighbor, info in self.cost_D.items():
-                for interface, cost in info.items():
-                    if neighbor == mini:
-                        self.intf_L[interface].put(p.to_byte_S(), 'out', True)
-                        print('%s: forwarding packet "%s" from interface %d to %d' % (self, p, i, interface))
+                # get the interface for this router and send on this interface
+                for neighbor, info in self.cost_D.items():
+                    for interface, cost in info.items():
+                        if neighbor == mini:
+                            self.intf_L[interface].put(p.to_byte_S(), 'out', True)
+                            print('%s: forwarding packet "%s" from interface %d to %d' % (self, p, i, interface))
 
         except queue.Full:
             print('%s: packet "%s" lost on interface %d' % (self, p, i))
