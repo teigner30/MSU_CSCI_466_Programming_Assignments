@@ -288,10 +288,16 @@ class Router:
                             if neighbor not in self.rt_tbl_D[d[0]].keys() and 'H' not in neighbor:
                                 self.rt_tbl_D[d[0]][neighbor] = 100
                         updated = True
+                    else:    # if the host is in our table
+                        if newname in self.rt_tbl_D.keys():
+                            currcost = self.rt_tbl_D[d[0]][newname]  # if the new update has a lesser cost than our table
+                            if currcost > cost:
+                                self.rt_tbl_D[d[0]][newname] = cost
+                                updated = True
                 #  if it is not a host, and it is a NEIGHBOR router and we don't have it as a router
                 elif d[0] in self.rt_tbl_D.keys():
                     for dest, val in self.rt_tbl_D.items():
-                        if newname in self.rt_tbl_D.keys():  # if its a destionation and not in routers
+                        if newname in self.rt_tbl_D.keys():  # if the router is a neighbor
                             if newname not in val.keys():  # if we don't have the router in our routing table as a router
                                 if dest == d[0]:  # if the destinatin is whats in the message, we know the cost
                                     self.rt_tbl_D[dest][newname] = cost
@@ -300,6 +306,17 @@ class Router:
                                 else:  # otherwise, we don't know
                                     self.rt_tbl_D[dest][newname] = 100
                                 updated = True
+                            else:
+                                currcost = self.rt_tbl_D[d[0]][newname]
+                                if currcost > cost:
+                                    self.rt_tbl_D[d[0]][newname] = cost
+                                    updated = True
+                # if d[0] in self.rt_tbl_D.keys():
+                #     if newname in self.rt_tbl_D[d[0]].keys():
+                #         curr_cost = self.rt_tbl_D[d[0]][newname]
+                #         if curr_cost > cost:
+                #             self.rt_tbl_D[d[0]][newname] = cost
+                #             updated = True
         routers = []
         for neigh in self.cost_D.keys():
             if 'H' not in neigh:
@@ -319,29 +336,44 @@ class Router:
                 for interface, cost in value.items():
                     # if neighbor in routers:
                     self.send_routes(interface)
-        else:
-            print('start bellman ford')
-            # find the minimum cost for the destionation
-            # if the minimum cost is different than what it is now, updated = True
 
+
+        # find the minimum cost for the destionation
+        # if the minimum cost is different than what it is now, updated = True
+        else:
+            # print('start bellman ford')
             for destination, value in self.rt_tbl_D.items():
 
                 for curr_router in value.keys():
                     dist_list = {}
-                    if curr_router == self.name:
-                        neighbors = self.cost_D.keys()
-                        for n in neighbors:
-                            if 'H' not in n:  # to avoid hosts
-                                # print(self.name, self.rt_tbl_D, 'neighbor', n, destination)
-                                dist_list[n] = self.rt_tbl_D[n][curr_router] + self.rt_tbl_D[destination][n]
+                    if curr_router == destination:
+                        continue
+                    elif curr_router == self.name:
+                        neighbors = []
+                        key = self.cost_D.keys()
+                        for neighbor in key:
+                            neighbors.append(neighbor)
+                        neighbors.append(curr_router)
+                    else:  ## add the currrouter to the neighbor list in the case in we're the routing table that we're loooking at
+                        neighbors = [self.name, curr_router]
+                    for n in neighbors:
+                        if 'H' not in n:  # to avoid hosts
+                            # print(self.name, self.rt_tbl_D, 'neighbor', n, destination)
+                            # if curr_router == self.name:
+                            #     # for k in self.cost_D[n].values():
+                            #     #     # print(len(self.cost_D[n]), 'LENGOTH OF COST K')
+                            #     dist_list[n] = self.rt_tbl_D[n][curr_router] + self.rt_tbl_D[destination][n]
+                            # else:
+                            dist_list[n] = self.rt_tbl_D[n][curr_router] + self.rt_tbl_D[destination][n]
                     if not dist_list:
                         continue
+                    # print('LIST OF COMPARABLES \nME', self.name, '\ndest: ', destination, '\nrouter:',curr_router, '\n',dist_list,'\n',self.rt_tbl_D, '\nneighbors', neighbors)
                     minim = min(dist_list, key=dist_list.get)
                     # self.rt_tbl_D[self.name][destination] = dist_list[minim]
-                    if self.rt_tbl_D[destination][curr_router] != dist_list[minim]:
+                    if self.rt_tbl_D[destination][curr_router] > dist_list[minim]:
                         self.rt_tbl_D[destination][curr_router] = dist_list[minim]
                         # print("SOMETHING", self.rt_tbl_D[destination][self.name])
-                        print("UPdating in bellmans style", self.name)
+                        # print("UPdating in bellmans style", self.name)
                         updated = True
             #
             #
