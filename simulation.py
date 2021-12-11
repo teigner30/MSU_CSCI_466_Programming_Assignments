@@ -23,12 +23,12 @@ if __name__ == '__main__':
 
     #^^ this is really important
     #create routers and routing tables for connected clients (subnets)
-    encap_tbl_D = { 'H3':{3:1, 4:0} }    # table used to encapsulate network packets into MPLS frames
-    frwd_tbl_D = {3:{3:1},
-                   4:{4:0}}     # table used to forward MPLS frames
+    encap_tbl_D = { 'H3':{4:2,3:3} }    # table used to encapsulate network packets into MPLS frames
+    frwd_tbl_D = {3:{3:3},
+                   4:{4:2}}     # table used to forward MPLS frames
     decap_tbl_D = {}    # table used to decapsulate network packets from MPLS frames
     router_a = Router(name='RA', 
-                              intf_capacity_L=[500,500],
+                              intf_capacity_L=[500,500,500,500],
                               encap_tbl_D = encap_tbl_D,
                               frwd_tbl_D = frwd_tbl_D,
                               decap_tbl_D = decap_tbl_D, 
@@ -36,7 +36,7 @@ if __name__ == '__main__':
     object_L.append(router_a)
 
     encap_tbl_D = {}
-    frwd_tbl_D = {4:{4:0}}
+    frwd_tbl_D = {4:{4:1}}
     decap_tbl_D = {}
     router_b = Router(name='RB', 
                               intf_capacity_L=[500,100],
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     object_L.append(router_b)
 
     encap_tbl_D = {}
-    frwd_tbl_D = {3: {3: 0}}
+    frwd_tbl_D = {3: {3: 1}}
     decap_tbl_D = {}
     router_c = Router(name='RC',
                       intf_capacity_L=[500, 100],
@@ -58,11 +58,11 @@ if __name__ == '__main__':
     object_L.append(router_c)
 
     encap_tbl_D = {}
-    frwd_tbl_D = {4: {4: 0},
-                  3: {3: 0}}
-    decap_tbl_D = {3: 0, 4: 0}
+    frwd_tbl_D = {4: {4: 2},
+                  3: {3: 2}}
+    decap_tbl_D = {3: 2, 4: 2}
     router_d = Router(name='RD',
-                      intf_capacity_L=[500, 100],
+                      intf_capacity_L=[500, 100, 500],
                       encap_tbl_D=encap_tbl_D,
                       frwd_tbl_D=frwd_tbl_D,
                       decap_tbl_D=decap_tbl_D,
@@ -75,13 +75,14 @@ if __name__ == '__main__':
     
     #add all the links - need to reflect the connectivity in cost_D tables above
     link_layer.add_link(Link(host_1, 0, router_a, 0))
-    link_layer.add_link(Link(router_a, 1, router_b, 0))
+    link_layer.add_link(Link(router_a, 2, router_b, 0))
     link_layer.add_link(Link(router_b, 1, router_d, 0))
-    link_layer.add_link(Link(router_d, 0, host_3, 0))
+    link_layer.add_link(Link(router_d, 2, host_3, 0))
+
     link_layer.add_link(Link(host_2, 0, router_a, 1))
-    link_layer.add_link(Link(router_a, 0, router_c, 0))
-    link_layer.add_link(Link(router_c, 1, router_d, 0))
-    link_layer.add_link(Link(router_d, 1, host_3, 0))
+    link_layer.add_link(Link(router_a, 3, router_c, 0))
+    link_layer.add_link(Link(router_c, 1, router_d, 1))
+    link_layer.add_link(Link(router_d, 2, host_3, 0))
     
     
     #start all the objects
@@ -96,7 +97,7 @@ if __name__ == '__main__':
     for i in range(1):
         priority = i%2
         host_1.udt_send('H3', 'MESSAGE_%d_FROM_H1' % i, priority)
-        # host_2.udt_send('H3', 'MESSAGE_%d_FROM_H2' % i, priority)
+        host_2.udt_send('H3', 'MESSAGE_%d_FROM_H2' % i, priority)
         
     #give the network sufficient time to transfer all packets before quitting
     sleep(simulation_time)
