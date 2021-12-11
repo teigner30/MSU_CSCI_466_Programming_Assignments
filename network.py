@@ -213,9 +213,17 @@ class Router:
     def process_network_packet(self, pkt, i):
         #for now, we just relabel the packet as an MPLS frame without encapsulation
         keyval = self.encap_tbl_D[pkt.dst]
+        print('keyval', keyval)
 
-        for k in keyval.keys():
-            key = k
+        if i == 0:
+            key = list(keyval.keys())[0]
+            # for k in keyval.keys():
+            #     key = k
+        else:
+            key = list(keyval.keys())[1]
+            # for k in keyval.keys():
+            #     key = k
+            #     break
 
         m_fr = MPLSFrame(int(key), pkt)
 
