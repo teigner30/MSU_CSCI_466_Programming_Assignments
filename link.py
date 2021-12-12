@@ -84,7 +84,8 @@ class Link:
                     intf_b.put(pkt_S, 'in')
                     #update the next free time of the interface according to serialization delay
                     pkt_size = len(pkt_S)*8 #assuming each character is 8 bits
-                    intf_a.next_avail_time = time.time() + pkt_size/intf_a.capacity                
+                    intf_a.next_avail_time = time.time() + pkt_size/intf_a.capacity
+                    print('QUEUEUEUEUEUE', intf_a.out_queue)
                     print('%s: transmitting frame "%s" on %s %s -> %s %s \n' \
                           ' - seconds until the next available time %f\n' \
                           ' - queue size %d' \
