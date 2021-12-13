@@ -44,6 +44,9 @@ class Interface:
             self.in_queue.put(pkt, block)
 
     def sort(self):
+        # set priority counts to 0 every sort
+        self.priority_0 = 0
+        self.priority_1 = 0
         queuelist = {}
         for i in range(self.out_queue.qsize()):
             pkt = self.out_queue.get('out')
@@ -234,8 +237,7 @@ class Router:
                 if prior_dict[k] == i:
                     newqueuelist[k] = prior_dict[k]
                     break
-        if len(newqueuelist) != 0:
-            print('whats cracking', newqueuelist)
+
         for elem in newqueuelist.keys():
             i = elem[-1]
             mFrame = MPLSFrame.from_byte_S(elem[0:-1])  # parse a frame out
