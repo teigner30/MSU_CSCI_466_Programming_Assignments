@@ -13,6 +13,8 @@ class Interface:
         self.out_queue = queue.Queue(maxsize);
         self.capacity = capacity #serialization rate
         self.next_avail_time = 0 #the next time the interface can transmit a packet
+        self.priority_1 = 0
+        self.priority_0 = 0
     
     ##get packet from the queue interface
     # @param in_or_out - use 'in' or 'out' interface
@@ -37,12 +39,33 @@ class Interface:
     # @param block - if True, block until room in queue, if False may throw queue.Full exception
     def put(self, pkt, in_or_out, block=False):
         if in_or_out == 'out':
-            # print('putting packet in the OUT queue')
+            # print('putting packet in the OUT queue', pkt)
             self.out_queue.put(pkt, block)
         else:
             # print('putting packet in the IN queue')
             self.in_queue.put(pkt, block)
-            
+
+    def sort(self):
+        queuelist = {}
+        for i in range(self.out_queue.qsize()):
+            pkt = self.out_queue.get('out')
+            # print('heres the packet', pkt)
+            queuelist[pkt] = pkt[-1]
+        sorted_values = sorted(queuelist.values(), reverse=True)
+        newqueuelist = {}
+        for i in sorted_values:
+            for k in queuelist.keys():
+                if queuelist[k] == i:
+                    if i == '0':
+                        self.priority_0 += 1
+                    else:
+                        self.priority_1 += 1
+                    newqueuelist[k] = queuelist[k]
+                    # print(queuelist[k], 'queue')
+                    break
+        # print('whats cracking', newqueuelist)
+        for elem in newqueuelist.keys():
+            self.out_queue.put(elem)
         
 ## Implements a network layer packet
 # NOTE: You will need to extend this class for the packet to include
@@ -67,6 +90,7 @@ class NetworkPacket:
     def to_byte_S(self):
         byte_S = str(self.dst).zfill(self.dst_S_length)
         byte_S += self.data_S
+        byte_S += str(self.priority)
         return byte_S
     
     ## extract a packet object from a byte string
@@ -74,9 +98,9 @@ class NetworkPacket:
     @classmethod
     def from_byte_S(self, byte_S):
         dst = byte_S[0 : NetworkPacket.dst_S_length].strip('0')
-        data_S = byte_S[NetworkPacket.dst_S_length : ]
-        # TODO come back to this
-        return self(dst, data_S, 0)
+        data_S = byte_S[NetworkPacket.dst_S_length : -1]
+        priority = byte_S[-1]
+        return self(dst, data_S, priority)
 
 class MPLSFrame:
     ## packet encoding lengths
@@ -88,7 +112,6 @@ class MPLSFrame:
     def __init__(self, label, networkPacket):
         self.label = label
         self.networkPacket = networkPacket
-        # TODO: add priority to the packet class
 
     ## called when printing the object
     def __str__(self):
@@ -214,7 +237,7 @@ class Router:
     def process_network_packet(self, pkt, i):
         #for now, we just relabel the packet as an MPLS frame without encapsulation
         keyval = self.encap_tbl_D[pkt.dst]
-        print('keyval', keyval)
+        # print('keyval', keyval)
 
         if i == 0:
             key = list(keyval.keys())[0]
