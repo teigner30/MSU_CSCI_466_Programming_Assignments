@@ -23,9 +23,10 @@ if __name__ == '__main__':
 
     #^^ this is really important
     #create routers and routing tables for connected clients (subnets)
-    encap_tbl_D = { 'H3':{4:2,3:3} }    # table used to encapsulate network packets into MPLS frames
-    frwd_tbl_D = {3:{3:3},
-                   4:{4:2}}     # table used to forward MPLS frames
+    # QUESTION: do you need differing priorities for each interface or just one interface for one priority and one for another?
+    # Maybe makes sense to have triple nested dict or a corresponding priority dict
+    encap_tbl_D = { 'H3':{4:2,5:2,2:3,3:3} }    # table used to encapsulate network packets into MPLS frames
+    frwd_tbl_D = {4:{4:2}, 5:{5:2}, 2:{2:3}, 3:{3:3}}    # table used to forward MPLS frames
     decap_tbl_D = {}    # table used to decapsulate network packets from MPLS frames
     router_a = Router(name='RA', 
                               intf_capacity_L=[500,500,500,500],
@@ -36,7 +37,7 @@ if __name__ == '__main__':
     object_L.append(router_a)
 
     encap_tbl_D = {}
-    frwd_tbl_D = {4:{4:1}}
+    frwd_tbl_D = {4:{4:1}, 5:{5:1}}
     decap_tbl_D = {}
     router_b = Router(name='RB', 
                               intf_capacity_L=[500,100],
@@ -47,7 +48,7 @@ if __name__ == '__main__':
     object_L.append(router_b)
 
     encap_tbl_D = {}
-    frwd_tbl_D = {3: {3: 1}}
+    frwd_tbl_D = {3: {3: 1}, 2: {2:1}}
     decap_tbl_D = {}
     router_c = Router(name='RC',
                       intf_capacity_L=[500, 500],
@@ -59,8 +60,10 @@ if __name__ == '__main__':
 
     encap_tbl_D = {}
     frwd_tbl_D = {4: {4: 2},
-                  3: {3: 2}}
-    decap_tbl_D = {3: 2, 4: 2}
+                  3: {3: 2},
+                  5:{5:2},
+                  2:{2:2}}
+    decap_tbl_D = {3: 2, 4: 2, 5: 2, 2: 2} # is this mapping correct?
     router_d = Router(name='RD',
                       intf_capacity_L=[500, 100, 500],
                       encap_tbl_D=encap_tbl_D,
@@ -82,7 +85,6 @@ if __name__ == '__main__':
     link_layer.add_link(Link(host_2, 0, router_a, 1))
     link_layer.add_link(Link(router_a, 3, router_c, 0))
     link_layer.add_link(Link(router_c, 1, router_d, 1))
-    link_layer.add_link(Link(router_d, 2, host_3, 0))
     
     
     #start all the objects
@@ -94,7 +96,7 @@ if __name__ == '__main__':
         t.start()
     
     #create some send events    
-    for i in range(4):
+    for i in range(5):
         priority = i%2
         host_1.udt_send('H3', 'MESSAGE_%d_FROM_H1' % i, priority)
         host_2.udt_send('H3', 'MESSAGE_%d_FROM_H2' % i, priority)

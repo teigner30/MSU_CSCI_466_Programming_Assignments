@@ -39,17 +39,14 @@ class Interface:
     # @param block - if True, block until room in queue, if False may throw queue.Full exception
     def put(self, pkt, in_or_out, block=False):
         if in_or_out == 'out':
-            # print('putting packet in the OUT queue', pkt)
             self.out_queue.put(pkt, block)
         else:
-            # print('putting packet in the IN queue')
             self.in_queue.put(pkt, block)
 
     def sort(self):
         queuelist = {}
         for i in range(self.out_queue.qsize()):
             pkt = self.out_queue.get('out')
-            # print('heres the packet', pkt)
             queuelist[pkt] = pkt[-1]
         sorted_values = sorted(queuelist.values(), reverse=True)
         newqueuelist = {}
@@ -61,9 +58,7 @@ class Interface:
                     else:
                         self.priority_1 += 1
                     newqueuelist[k] = queuelist[k]
-                    # print(queuelist[k], 'queue')
                     break
-        # print('whats cracking', newqueuelist)
         for elem in newqueuelist.keys():
             self.out_queue.put(elem)
         
@@ -210,6 +205,7 @@ class Router:
     ## look through the content of incoming interfaces and 
     # process data and control packets
     def process_queues(self):
+        prior_dict = {}
         for i in range(len(self.intf_L)):
             fr_S = None #make sure we are starting the loop with a blank frame
             fr_S = self.intf_L[i].get('in') #get frame from interface i
@@ -224,12 +220,27 @@ class Router:
                 self.process_network_packet(p, i)
             elif fr.type_S == "MPLS":
                 m_fr = MPLSFrame.from_byte_S(pkt_S) #parse a frame out
-                #for now, we just relabel the packet as an MPLS frame without encapsulation
-                # m_fr = p
-                #send the MPLS frame for processing
-                self.process_MPLS_frame(m_fr, i)
+                str_m_fr = str(m_fr)
+                prior_dict[pkt_S + str(i)] = str_m_fr[-1]
+
+
             else:
                 raise('%s: unknown frame type: %s' % (self, fr.type))
+
+        sorted_values = sorted(prior_dict.values(), reverse=True)
+        newqueuelist = {}
+        for i in sorted_values:
+            for k in prior_dict.keys():
+                if prior_dict[k] == i:
+                    newqueuelist[k] = prior_dict[k]
+                    break
+        if len(newqueuelist) != 0:
+            print('whats cracking', newqueuelist)
+        for elem in newqueuelist.keys():
+            i = elem[-1]
+            mFrame = MPLSFrame.from_byte_S(elem[0:-1])  # parse a frame out
+            self.process_MPLS_frame(mFrame, int(i))
+
 
     ## process a network packet incoming to this router
     #  @param p Packet to forward
@@ -237,17 +248,18 @@ class Router:
     def process_network_packet(self, pkt, i):
         #for now, we just relabel the packet as an MPLS frame without encapsulation
         keyval = self.encap_tbl_D[pkt.dst]
-        # print('keyval', keyval)
-
+        # came in on interface 0 so mpls label 4 or 5
         if i == 0:
-            key = list(keyval.keys())[0]
-            # for k in keyval.keys():
-            #     key = k
+            if pkt.priority == '0':
+                key = list(keyval.keys())[0]
+            else:
+                key = list(keyval.keys())[1]
+        # came in on interface 1 so 2 or 3
         else:
-            key = list(keyval.keys())[1]
-            # for k in keyval.keys():
-            #     key = k
-            #     break
+            if pkt.priority == '0':
+                key = list(keyval.keys())[2]
+            else:
+                key = list(keyval.keys())[3]
 
         m_fr = MPLSFrame(int(key), pkt)
 
@@ -275,7 +287,6 @@ class Router:
                 print('%s: frame "%s" lost on interface %d' % (self, m_fr, i))
                 pass
         else:
-            # print('fwrdd tble', self.frwd_tbl_D[key], key, self.name)
             out1 = self.frwd_tbl_D[key]
             out = out1[key]
             try:
